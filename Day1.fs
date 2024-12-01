@@ -1,37 +1,79 @@
 module AOC2024.Day1
 open System
+open System.Text
 
 // Function to extract digits from a line of text and turn them into
 // a list.  Each list should contain two digits, one from each of the
 // actual location lists
-let extractDigitList line = 
-    line
-    |> Seq.filter Char.IsDigit
-    |> Seq.map (fun c -> int c - int '0')
-    |> Seq.toList
+let parseDigits line =
+    let buffer = StringBuilder()
+    let result = ResizeArray<int>()
+    let flushBuffer () =
+        if buffer.Length > 0 then
+            result.Add(int (buffer.ToString()))
+            buffer.Clear() |> ignore
+    line |> Seq.iter (fun c ->
+        if Char.IsDigit c then 
+            buffer.Append(c) |> ignore
+        else 
+            flushBuffer())
+    flushBuffer()
+    result |> Seq.toList
 
-// Part 1 solver.  Work in progress.
+// Parse the input using parseDigits and only keep valid entries
+// (lines that contain two integers)
+let parseInput input =
+    input
+    |> Seq.map (fun line -> parseDigits line)
+    |> Seq.filter (fun digits -> digits.Length = 2)
+
+// Given a sequence of integer lists (as derived by parseInput),
+// extract just the column expressed by idx.  To get the first list,
+// for example, use idx 0.  Using parseInput first ensures that sequence
+// entries all contain exactly two items, so 0 and 1 are safe here
+let extractList (lst:seq<List<int>>) = 
+    let extractAtIdx idx = 
+        lst
+        |> Seq.map (fun digits -> digits[idx])
+        |> Seq.sort
+        |> Seq.toList
+    extractAtIdx
+
+// Solver for part 1.  Extract the left and right list, zip them,
+// map over and get the difference between the values, and finally sum
+// those differences.
 let part1 input = 
-    let extracted = 
-        input
-        |> Seq.map (fun line -> extractDigitList line)
-        |> Seq.filter (fun digits -> digits.Length = 2)
-    let firstCol = 
-        extracted
-        |> Seq.map (fun digits -> digits[0])
-        |> Seq.sort
-        |> Seq.toList
-    let secondCol =
-        extracted
-        |> Seq.map (fun digits -> digits[1])
-        |> Seq.sort
-        |> Seq.toList
+    let extracted = parseInput input
+    let left = extractList extracted 0
+    let right = extractList extracted 1
     let answer = 
-        firstCol
-        |> List.map (fun digit -> digit)
-    sprintf "Part 1: %A" answer
+        List.zip left right 
+        |> List.map (fun (left, right) -> abs(left - right))
+        |> List.sum
+    sprintf "Part 1: %d" answer
 
-// boilerplate for Part 2.  Will fill this in when I get there.
-let part2 input = "Part 2: "
+// Solver for part 2. Start the same as before, but this time
+// we will be mapping over the left list, counting the number of
+// matching location IDs in the right list, taking the product of
+// that value and the location ID, and finally summing those up.
+let part2 input = 
+    let extracted = parseInput input
+    let left = extractList extracted 0
+    let right = extractList extracted 1
+    // Helper to get the count of occurrences in the right list
+    // for a given location ID
+    let countOccurrences locID = 
+        right 
+        |> List.filter (fun rightID -> rightID = locID)
+        |> List.length
+    let answer =
+        left
+        |> List.map (fun leftID ->
+            let occurrences = countOccurrences leftID
+            leftID * occurrences)
+        |> List.sum
+    sprintf "Part 2: %d" answer
 
-let solve input = (input |> part1, input |> part2)
+// Solve part 1 and part 2
+let solve input = 
+    (input |> part1, input |> part2)
