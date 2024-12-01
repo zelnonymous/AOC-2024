@@ -3,10 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>Day_1</RootNamespace>
+    <RootNamespace>AOC_2024</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="Day1.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
