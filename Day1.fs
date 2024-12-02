@@ -1,24 +1,7 @@
 module AOC2024.Day1
+open AOC2024.Utils
 open System
 open System.Text
-
-// Function to extract digits from a line of text and turn them into
-// a list.  Each list should contain two digits, one from each of the
-// actual location lists
-let parseDigits line =
-    let buffer = StringBuilder()
-    let result = ResizeArray<int>()
-    let flushBuffer () =
-        if buffer.Length > 0 then
-            result.Add(int (buffer.ToString()))
-            buffer.Clear() |> ignore
-    line |> Seq.iter (fun c ->
-        if Char.IsDigit c then 
-            buffer.Append(c) |> ignore
-        else 
-            flushBuffer())
-    flushBuffer()
-    result |> Seq.toList
 
 // Parse the input using parseDigits and only keep valid entries
 // (lines that contain two integers)
