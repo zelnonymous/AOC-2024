@@ -73,7 +73,7 @@ let part1 input =
     let total =
         input
         |> Seq.map (fun line ->
-            let (nextEn, result) = 
+            let (_, result) = 
                 parseLine false true 0 (Seq.toList line)
             result)
         |> Seq.sum
