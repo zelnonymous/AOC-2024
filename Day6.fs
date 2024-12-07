@@ -35,16 +35,6 @@ let rec getGaurdStart y rest =
         | None -> getGaurdStart (y+1) ls
     | [] -> failwithf "Unable to find gaurd!"
 
-// Once the gaurd's position and direction are detected, we replace them with
-// a . like other non-occupied spaces. In hindsight, this is probably not
-// necessary since we only explicitly check for walls when validating moves.
-let removeGaurdChar grid (gy, gx, _) =
-    grid
-    |> List.mapi (fun y l ->
-       l |> List.mapi (fun x c ->
-        if y = gy && x = gx then '.' else c))
-
-
 // Given a current position and direction, get the next position
 let getNextPos (y, x, d) =
     match d with
@@ -112,21 +102,18 @@ let rec walk walked (y, x, d) (grid:List<List<char>>) =
         (walked, false)
 
 // Initalization function to get the grid as a List<List<char>>, find the 
-// gaurd starting parameters, and remove him from the grid. Returns the
-// 'cleaned' grid and the gaurd details.
+// gaurd starting parameters. Returns the grid and the gaurd details.
 let initialize input = 
     let grid = input |> Utils.getGrid
     let gaurd = getGaurdStart 0 grid
-    let cleaned = removeGaurdChar grid gaurd
-    (cleaned, gaurd)
+    (grid, gaurd)
 
 // Given the grid and a set of coordinates, return a new grid with the
 // an obstacle inserted at the specified position
 let insertObstacle grid y x =
     grid
     |> List.mapi (fun y' l -> 
-        l |> List.mapi (fun x' c ->
-            if x' = x && y' = y then '#' else c))
+        l |> List.mapi (fun x' c -> if x' = x && y' = y then '#' else c))
 
 // For part one, we shouldn't be in a loop, so we ignore that.
 // We just walk the gaurd until it's out of bounds, then count the steps to
@@ -136,6 +123,7 @@ let part1 input =
     let (walked, _) = walk [] gaurd grid
     let answer = 
         walked 
+        |> List.map (fun (x,y,_) -> (x,y)) 
         |> Seq.distinct
         |> Seq.length
     sprintf "Part 1: %d" answer
@@ -153,17 +141,16 @@ let part2 input =
         |> Seq.distinct 
         |> Seq.toList
     printfn "Testing %d mutations..." (unique |> List.length)
-    let answer =
+    let mutations =
         unique
         |> List.mapi (fun i (y,x) ->
+            printfn "Obstacle at %d %d (Mutation #%d)" y x i
             let mutated = insertObstacle grid y x
-            let (_, looped) = walk [] gaurd mutated
-            if looped then
-                printfn "Obstacle at %d %d (Mutation #%d)" y x i
-                looped
-            else
-                looped)
-        |> List.filter (fun l -> l)
+            walk [] gaurd mutated)
+        |> List.filter (fun (_,looped) -> looped)
+    printfn "%A" mutations
+    let answer =
+        mutations
         |> List.length
     sprintf "Part 2: %d" answer
 
