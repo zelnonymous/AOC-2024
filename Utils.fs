@@ -22,3 +22,11 @@ let parseDigits line =
             flushBuffer())
     flushBuffer()
     result |> Seq.toList
+
+
+// $ead the entire input into memory to form the grid as a two
+// dimensional list of chars
+let getGrid (input:seq<string>) = 
+    input 
+    |> Seq.toList 
+    |> List.map (fun s -> s.ToCharArray() |> Array.toList) 

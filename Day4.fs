@@ -1,4 +1,5 @@
 module AOC2024.Day4
+open AOC2024.Utils
 
 // An enum for directions in which we can cast a ray to get a word
 // from the wordsearch, including the diagonals
@@ -50,13 +51,6 @@ let rec castRay (grid:List<List<char>>) (buffer:string) (y, x) (d:Direction) len
                 | _ -> y
             let newStr = buffer + string(grid[y][x])
             castRay grid newStr (newY, newX) d len
-
-// We have to read the entire input into memory to form the grid as a two
-// dimensional list of chars
-let getGrid (input:seq<string>) = 
-    input 
-    |> Seq.toList 
-    |> List.map (fun s -> s.ToCharArray() |> Array.toList) 
 
 // For part 1, filter the grid to the coordinates of every instance of
 // 'X', then cast a 4 character ray from that position in each direction.
