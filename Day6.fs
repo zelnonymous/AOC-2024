@@ -18,7 +18,7 @@ let getDirection c =
     | 'v' -> Some Down
     | _ -> None
 
-// Recursive function to get the guards starting position and direction 
+// Recursive function to get the guard's starting position and direction 
 let rec getGaurdStart y rest =
     match rest with
     | l::ls ->
@@ -35,71 +35,67 @@ let rec getGaurdStart y rest =
         | None -> getGaurdStart (y+1) ls
     | [] -> failwithf "Unable to find gaurd!"
 
-// Given a current position and direction, get the next position
-let getNextPos (y, x, d) =
+// Given a position and a direction, get the next position the gaurd would be in
+let planPosition (y, x, d) =
     match d with
     | Up -> (y-1, x)
     | Down -> (y+1, x)
     | Left -> (y, x-1)
     | Right -> (y, x+1)
 
-// Determine the direction the gaurd will be facing for the next move.
-// If they would move to a position occupied by a wall, turn right
-let getNextDirection (grid:List<List<char>>) y x d =
-    match grid.[y].[x] with
+// Determine the real next position the gaurd will move to and the direction he
+// will be facing based on obstacle encounters and turning.  This could happen
+// multiple times before finding a valid position in this scenario:
+// ....
+// ..>#
+// ..#.
+let rec getNextPos (grid:List<List<char>>) y x d =
+    let py, px = planPosition (y, x, d)
+    match grid.[py].[px] with
     | '#' ->
         match d with
-        | Up -> Right
-        | Right -> Down
-        | Down -> Left
-        | Left -> Up
-    | _ -> d
+        | Up -> getNextPos grid y x Right
+        | Right -> getNextPos grid y x Down
+        | Down -> getNextPos grid y x Left
+        | Left -> getNextPos grid y x Up
+    | _ -> (py, px, d)
 
 // Walk the gaurd until either a loop is detected or they are out of bounds
 let rec walk walked (y, x, d) (grid:List<List<char>>) =
     match grid with
+    | [] -> 
+        // Empty grid.  This should not happen
+        (walked, false)
     | _::_ -> 
         // If the current position and direction are present in the walked
-        // list, we walked this path before and are in a loop.
+        // list, the gaurd walked this path in this direction before and is in 
+        //a loop.
         let looped = walked |> List.tryFind (fun (py, px, pd) ->
             py = y && px = x && pd = d)
         match looped with
         | Some _ -> 
             // Desribe the loop we detected and return the walked position list
             // as of the time of detection and 'true' for looped
-            let descript = 
-                match d with
-                | Up -> "Up"
-                | Right -> "Right"
-                | Down -> "Down"
-                | Left -> "Left"
-            printfn "Loop detected at %d %d (Direction %s)" y x descript
+            printfn "Loop detected at %d %d" y x
             (walked, true)
         | None -> 
-            // We are not in a loop. Add our current position and direction to
-            // the walked list
+            // We are not in a loop. Add the gaurd's current position and
+            // direction to the walked list
             let nw = List.append walked [(y,x,d)]
-            // Get the next planned position based on our current position and
-            // direction.  This may be a wall or out of bounds, so we'll need to 
-            // do some checks.
-            let npy, npx = getNextPos (y, x, d)
-            // Check for out of bounds first
+            // Get the next planned position based on the current position and
+            // direction.  If it is out of bounds, the gaurd will leave the
+            // grid this move
+            let npy, npx = planPosition (y, x, d)
             let oob =
                 npy < 0 || npy > grid.Length - 1 ||
                 npx < 0 || npx > grid[0].Length - 1
             match oob with
             | true ->  (nw, false)
             | false ->
-                // The gaurd is not out of bounds.  Determine if we will walk
-                // to the planned space or turn becuase of an obstacle
-                let nd = getNextDirection grid npy npx d
-                // Get the next position again in case we turned and are
-                // walking in a different direction now
-                let ny, nx = getNextPos (y, x, nd)
+                // The gaurd remains in bounds, but may be facing an obstacle
+                // or corner.  Find the next position and walk there.
+                let (ny, nx, nd) = getNextPos grid y x d
                 walk nw (ny, nx, nd) grid
-    | [] -> 
-        // Empty grid.  This should not happen
-        (walked, false)
 
 // Initalization function to get the grid as a List<List<char>>, find the 
 // gaurd starting parameters. Returns the grid and the gaurd details.
@@ -135,20 +131,33 @@ let part1 input =
 let part2 input =
     let (grid, gaurd) = initialize input
     let (walked, _) = walk [] gaurd grid
+    let (gx, gy, _) = gaurd
     let unique = 
         walked 
-        |> List.map (fun (x,y,_) -> (x,y)) 
-        |> Seq.distinct 
+        |> List.filter (fun (y,x,_) -> not (x = gx && y = gy))
+        |> Seq.distinctBy (fun (y,x,_) -> (y,x))
         |> Seq.toList
-    printfn "Testing %d mutations..." (unique |> List.length)
-    let mutations =
-        unique
-        |> List.mapi (fun i (y,x) ->
-            printfn "Obstacle at %d %d (Mutation #%d)" y x i
+    let rec testObstacle idx grid mutations gaurd prev (result:List<bool>) =
+        match mutations with
+        | (y,x,d)::ms ->
+            printfn "Obstacle at %d %d (Mutation #%d)" y x idx
             let mutated = insertObstacle grid y x
-            walk [] gaurd mutated)
-        |> List.filter (fun (_,looped) -> looped)
-    printfn "%A" mutations
+            match prev with
+            | None -> 
+                let (_,looped) = walk [] gaurd mutated
+                System.Console.ReadLine |> ignore
+                let newResult = List.append result [looped]
+                testObstacle (idx+1) grid ms gaurd (Some gaurd) newResult
+            | Some (py,px,pd) ->
+                let (_,looped) = walk [] (py,px,pd) mutated
+                let newResult = List.append result [looped]
+                testObstacle (idx+1) grid ms gaurd (Some (y,x,d)) newResult
+        | [] -> result
+    printfn "Testing %d mutations..." (unique |> List.length)
+    let mutations = 
+        testObstacle 1 grid unique gaurd None []
+        |> List.filter (fun looped -> looped)
+    
     let answer =
         mutations
         |> List.length
