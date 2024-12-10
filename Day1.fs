@@ -1,7 +1,5 @@
 module AOC2024.Day1
 open AOC2024.Utils
-open System
-open System.Text
 
 // Parse the input using parseDigits and only keep valid entries
 // (lines that contain two integers)
