@@ -5,11 +5,11 @@ open System.IO
 
 // Set this to the solver for the day you want to solve
 // TODO: Select day from an argument or make a TUI menu to select a day
-let solver = Day7.solve
+let solver = Day8.solve
 
 // Set this to the input file you want to solve for
 // TODO: Select day from an argument or make a TUI menu to select a day
-let inputFile = "Day7.txt"
+let inputFile = "Day8-Example.txt"
 
 let cwd = Directory.GetCurrentDirectory()
 
